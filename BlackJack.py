@@ -15,6 +15,8 @@ class Player:
             self.type = "Player"
         if(id == 1):
             self.type = "Dealer"
+        if(id == 2):
+            self.type = "You"
     def pullCard(self, Deck):
         self.hand.append(Deck.pull())
     def strat(self, Deck):
@@ -25,6 +27,8 @@ class Player:
             self.simpleStrat(Deck)
         if(self.id == 1):
             self.dealerStrat(Deck)
+        if(self.id == 2):
+            self.playerChoice(Deck)
     def bust(self):
         self.busted = True
     def dealerStrat(self, Deck):
@@ -45,6 +49,29 @@ class Player:
             self.hasAce = False
             if(not self.doubled):
                 self.draw(Deck)
+    def playerChoice(self, Deck):
+        self.printHand()
+        if(not self.blackJack):
+            if(self.canDouble):
+                ans = input("Enter H to hit, S to Stand, or D to double")
+                while(not ans == 'H' and not ans == 'S' and not ans == 'D'):
+                    ans = input("Enter H to hit, S to Stand, or D to double")
+                if(ans == 'H'):
+                    self.drawOne(Deck)
+                elif(ans == 'D'):
+                    self.double(Deck)
+                elif(ans == 'S'):
+                    return
+            if(not self.doubled):
+                while(self.total < 21):
+                    self.printHand()
+                    ans = input("Enter H to hit or S to Stand")
+                    while(not ans == 'H' and not ans == 'S'):
+                        ans = input("Enter H to hit or S to Stand")
+                    if(ans == 'H'):
+                        self.drawOne(Deck)
+                    elif(ans == 'S'):
+                        return
     def draw(self, Deck):
         self.canDouble = False
         while(self.total <= 16):
@@ -57,6 +84,12 @@ class Player:
     def double(self, Deck):
         self.drawOne(Deck)
         self.double = True
+    def printHand(self):
+        print("YOUR HAND")
+        for x in self.hand:
+            x.printCard()
+        print("Your Total: " , self.total)
+        print("Dealer Card: ", a.dealer.hand[1].value)
     def checkAce(self):
         for i in range(len(self.hand)):
                 if(self.hand[i].number == 1):
@@ -68,10 +101,18 @@ class Player:
             self.blackJack = True
     def firstTotal(self):
         self.total = self.hand[0].value + self.hand[1].value
+    def setId(self, ID):
+        self.id = ID
+    def setType(self, Type):
+        self.type = Type
     def setBank(self, bank):
         self.bankRoll = bank
     def setBet(self, Bet):
         self.bet = Bet
+    def winBet(self):
+        self.bet = -self.bet
+    def bjBet(self):
+        self.bet = -((3/2)*self.bet)
 class Deck:
     def __init__(self, decks):
         self.fullDeck = []
@@ -122,61 +163,104 @@ class Game:
         for i in range(playerNumber):
             self.players.append(Player(0))
         self.draw()
+        self.dealer.firstTotal()
     def draw(self):
         for x in range(2):
             for i in range(self.playerNumber):
                 self.players[i].pullCard(self.deck)
             self.dealer.pullCard(self.deck)
     def run(self):
-        for i in range(self.playerNumber):
-            self.players[i].strat(self.deck)
-            if(self.players[i].total > 21):
-                self.players[i].bust()
+        for i in self.players:
+            i.strat(self.deck)
+            if(i.total > 21):
+                i.bust()
         self.dealer.strat(self.deck)
+        print()
         self.check()
+    def play(self):
+        playerIndex = random.randrange(len(self.players))
+        self.players[playerIndex].setId(2)
+        self.players[playerIndex].setType("You")
+        self.run()
     def check(self):
-        for i in range(self.playerNumber):
-                if(self.players[i].blackJack):
-                    print("PLAYER", i, "BLACKJACK", self.players[i].total)
+        for i in self.players:
+                if(i.blackJack):
+                    i.bjBet()
+                    if(i.id == 0):
+                        print(i.type, self.players.index(i), "BLACKJACK", i.total)
+                    elif(i.id == 2):
+                        print("You have a BLACKJACK!")
         if(self.dealer.blackJack):
             print("Dealer", "BLACKJACK", self.dealer.total)
         if(self.dealer.total > 21):
             self.dealer.bust()
             print("Dealer Busted")
-            for i in range(self.playerNumber):
-                if(self.players[i].busted == False and not self.players[i].blackJack):
-                    print("PLAYER", i, "WINS", self.players[i].total)
-                if(self.players[i].busted):    
-                    print("PLAYER", i, "BUSTED", self.players[i].total)
+            for i in self.players:
+                if(i.busted == False and not i.blackJack):
+                    i.winBet()
+                    if(i.id == 0):
+                        print(i.type, self.players.index(i), "WINS", i.total)
+                    elif(i.id == 2):
+                        print("You Win", i.total)
+                    if(i.busted):
+                        if(i.id == 0):
+                            print(i.type, self.players.index(i), "BUSTED", i.total)
+                        elif(i.id == 2):
+                            print("You Busted", i.total)
         if(self.dealer.busted == False):
             print("DEALER", self.dealer.total)
-            for i in range(self.playerNumber):
-                if(self.players[i].busted):
-                    print("PLAYER", i, "BUSTED", self.players[i].total)
-                if(self.players[i].total < self.dealer.total):
-                    self.players[i].bust()
-                    print("PLAYER", i, "LOST", self.players[i].total)
-                if(self.players[i].total == self.dealer.total):
-                    print("PLAYER", i, "TIES", self.players[i].total)
-                if(self.players[i].total > self.dealer.total and self.players[i].busted == False and not self.players[i].blackJack):
-                    print("PLAYER", i, "WINS", self.players[i].total)            
-    def bets(self):
-        for i in range(self.playerNumber):
-            self.players[i].setBank(self.players[i].bankRoll - self.players[i].bet)
+            for i in self.players:
+                if(i.busted):
+                    if(i.id == 0):
+                        print(i.type, self.players.index(i), "BUSTED", i.total)
+                    elif(i.id == 2):
+                        print("You Busted", i.total)
+                if(i.total < self.dealer.total):
+                    i.bust()
+                    if(i.id == 0):
+                        print(i.type, self.players.index(i), "Lost", i.total)
+                    elif(i.id == 2):
+                        print("You Lost", i.total)
+                if(i.total == self.dealer.total):
+                    i.setBet(0)
+                    if(i.id == 0):
+                        print(i.type, self.players.index(i), "TIES", i.total)
+                    elif(i.id == 2):
+                        print("You Tie", i.total)
+                if(i.total > self.dealer.total and i.busted == False and not i.blackJack):
+                    i.winBet()
+                    if(i.id == 0):
+                        print(i.type, self.players.index(i), "WINS", i.total)
+                    elif(i.id == 2):
+                        print("You Win", i.total)          
+    def settleBets(self):
+        for i in self.players:
+            i.setBank(i.bankRoll - i.bet)
+    def printHands(self):
+        for i in range(a.playerNumber):
+            print()
+            print("Player", i)
+            for j in range(len(a.players[i].hand)):
+                a.players[i].hand[j].printCard()
+        print()
+        print("Dealer")
+        for x in self.dealer.hand:
+            x.printCard()
         
 val = int(input("How many Players?"))
 while(val < 0 or val > 6):
     val = int(input("Please enter a number between 1-6"))
 a = Game(val)
-a.run()
-for i in range(a.playerNumber):
-    print("Player", i)
-    for j in range(len(a.players[i].hand)):
-        a.players[i].hand[j].printCard()
-print("Dealer")
-for x in range(len(a.dealer.hand)):
-    a.dealer.hand[x].printCard()
 
+ans = input("Enter PLAY to play or SIMULATE to simulate")
+while((not(ans == 'PLAY')) and (not(ans == 'SIMULATE'))):
+      ans = input("Enter PLAY to play or SIMULATE to simulate")
+if(ans == 'SIMULATE'): 
+    a.run()
+    a.printHands()
+elif(ans == 'PLAY'):
+    a.play()
+    a.printHands()
 # If win Bankroll = Bankroll + 2 x bet
 
 
