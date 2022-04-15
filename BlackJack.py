@@ -8,6 +8,7 @@ class Player:
         self.hasAce = False
         self.blackJack = False
         self.canDouble = True
+        self.double = False
         self.bankRoll = 0
         self.bet = 0
         if(id == 0):
@@ -21,7 +22,7 @@ class Player:
         self.checkAce()
         self.checkBJ()
         if(self.id == 0):
-            self.perfectStrat(Deck)
+            self.simpleStrat(Deck)
         if(self.id == 1):
             self.dealerStrat(Deck)
     def bust(self):
@@ -33,10 +34,10 @@ class Player:
             self.total -= 10
             self.hasAce = False
             self.draw(Deck)
-    def perfectStrat(self, Deck):
+    def simpleStrat(self, Deck):
         self.draw(Deck)
         self.checkAce()
-        if(self.total > 21 and self.hasAce):
+        if(self.total > 21 and self.hasAce and not self.double):
             self.total -= 10
             self.hasAce = False
             self.draw(Deck)
@@ -51,6 +52,7 @@ class Player:
         self.total += self.hand[len(self.hand)-1].value
     def double(self, Deck):
         self.drawOne(Deck)
+        self.double = True
     def checkAce(self):
         for i in range(len(self.hand)):
                 if(self.hand[i].number == 1):
@@ -126,7 +128,6 @@ class Game:
             self.players[i].strat(self.deck)
             if(self.players[i].total > 21):
                 self.players[i].bust()
-                print("PLAYER", i, "BUSTED", self.players[i].total)
         self.dealer.strat(self.deck)
         self.check()
     def check(self):
@@ -141,8 +142,12 @@ class Game:
             for i in range(self.playerNumber):
                 if(self.players[i].busted == False and not self.players[i].blackJack):
                     print("PLAYER", i, "WINS", self.players[i].total)
+                print("PLAYER", i, "BUSTED", self.players[i].total)
         if(self.dealer.busted == False):
+            print("DEALER", self.dealer.total)
             for i in range(self.playerNumber):
+                if(self.players[i].busted):
+                    print("PLAYER", i, "BUSTED", self.players[i].total)
                 if(self.players[i].total < self.dealer.total):
                     self.players[i].bust()
                     print("PLAYER", i, "LOST", self.players[i].total)
@@ -150,7 +155,6 @@ class Game:
                     print("PLAYER", i, "TIES", self.players[i].total)
                 if(self.players[i].total > self.dealer.total and self.players[i].busted == False and not self.players[i].blackJack):
                     print("PLAYER", i, "WINS", self.players[i].total)            
-            print("DEALER", self.dealer.total)
     def bets(self):
         for i in range(self.playerNumber):
             self.players[i].setBank(self.players[i].bankRoll - self.players[i].bet)
