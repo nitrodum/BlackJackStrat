@@ -8,7 +8,7 @@ class Player:
         self.hasAce = False
         self.blackJack = False
         self.canDouble = True
-        self.double = False
+        self.doubled = False
         self.bankRoll = 0
         self.bet = 0
         if(id == 0):
@@ -35,12 +35,16 @@ class Player:
             self.hasAce = False
             self.draw(Deck)
     def simpleStrat(self, Deck):
-        self.draw(Deck)
+        if(self.total > 8 and self.total < 12):
+            self.double(Deck)
+        else:
+            self.draw(Deck)
         self.checkAce()
-        if(self.total > 21 and self.hasAce and not self.double):
+        if(self.total > 21 and self.hasAce):
             self.total -= 10
             self.hasAce = False
-            self.draw(Deck)
+            if(not self.doubled):
+                self.draw(Deck)
     def draw(self, Deck):
         self.canDouble = False
         while(self.total <= 16):
@@ -142,7 +146,8 @@ class Game:
             for i in range(self.playerNumber):
                 if(self.players[i].busted == False and not self.players[i].blackJack):
                     print("PLAYER", i, "WINS", self.players[i].total)
-                print("PLAYER", i, "BUSTED", self.players[i].total)
+                if(self.players[i].busted):    
+                    print("PLAYER", i, "BUSTED", self.players[i].total)
         if(self.dealer.busted == False):
             print("DEALER", self.dealer.total)
             for i in range(self.playerNumber):
