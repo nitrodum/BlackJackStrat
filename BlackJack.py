@@ -72,6 +72,13 @@ class Player:
                         self.drawOne(Deck)
                     elif(ans == 'S'):
                         return
+    def clearHand(self):
+        self.hand = []
+        self.busted = False
+        self.hasAce = False
+        self.blackJack = False
+        self.canDouble = True
+        self.doubled = False
     def draw(self, Deck):
         self.canDouble = False
         while(self.total <= 16):
@@ -84,6 +91,7 @@ class Player:
     def double(self, Deck):
         self.drawOne(Deck)
         self.double = True
+        self.bet = float(self.bet) + float(self.bet)
     def printHand(self):
         print("YOUR HAND")
         for x in self.hand:
@@ -110,9 +118,9 @@ class Player:
     def setBet(self, Bet):
         self.bet = Bet
     def winBet(self):
-        self.bet = -self.bet
+        self.bet = -float(self.bet)
     def bjBet(self):
-        self.bet = -((3/2)*self.bet)
+        self.bet = -((3/2)*float(self.bet))
 class Deck:
     def __init__(self, decks):
         self.fullDeck = []
@@ -158,6 +166,8 @@ class Game:
     dealer = Player(1)
     players = []
     deck = Deck(6)
+    hasPlayer = False
+    playerIndex = 0
     def __init__(self, playerNumber):
         self.playerNumber = playerNumber
         for i in range(playerNumber):
@@ -177,11 +187,19 @@ class Game:
         self.dealer.strat(self.deck)
         print()
         self.check()
-    def play(self):
-        playerIndex = random.randrange(len(self.players))
-        self.players[playerIndex].setId(2)
-        self.players[playerIndex].setType("You")
+        self.settleBets()
+        self.printHands()
+        self.resetTable()
+    def play(self, Bet):
+        if(self.hasPlayer == False):
+            self.playerIndex = random.randrange(len(self.players))
+            self.players[self.playerIndex].setId(2)
+            self.players[self.playerIndex].setType("You")
+            self.players[self.playerIndex].setBank(1000)
+            self.hasPlayer = True
+        self.players[self.playerIndex].setBet(Bet)
         self.run()
+        print("Bankroll: ",  self.players[self.playerIndex].bankRoll)
     def check(self):
         for i in self.players:
                 if(i.blackJack):
@@ -202,11 +220,11 @@ class Game:
                         print(i.type, self.players.index(i), "WINS", i.total)
                     elif(i.id == 2):
                         print("You Win", i.total)
-                    if(i.busted):
-                        if(i.id == 0):
-                            print(i.type, self.players.index(i), "BUSTED", i.total)
-                        elif(i.id == 2):
-                            print("You Busted", i.total)
+                if(i.busted):
+                    if(i.id == 0):
+                        print(i.type, self.players.index(i), "BUSTED", i.total)
+                    elif(i.id == 2):
+                        print("You Busted", i.total)
         if(self.dealer.busted == False):
             print("DEALER", self.dealer.total)
             for i in self.players:
@@ -233,9 +251,14 @@ class Game:
                         print(i.type, self.players.index(i), "WINS", i.total)
                     elif(i.id == 2):
                         print("You Win", i.total)          
+    def resetTable(self):
+        for i in self.players:
+            i.clearHand()
+        self.dealer.clearHand()
     def settleBets(self):
         for i in self.players:
-            i.setBank(i.bankRoll - i.bet)
+            i.setBank(i.bankRoll - int(i.bet)
+                      )
     def printHands(self):
         for i in range(a.playerNumber):
             print()
@@ -257,10 +280,20 @@ while((not(ans == 'PLAY')) and (not(ans == 'SIMULATE'))):
       ans = input("Enter PLAY to play or SIMULATE to simulate")
 if(ans == 'SIMULATE'): 
     a.run()
-    a.printHands()
 elif(ans == 'PLAY'):
-    a.play()
-    a.printHands()
+    bet = input("Enter you Bet")
+    a.play(bet)
+    ans = input("Enter Y to Play again or N to stop")
+    while(not ans == 'Y' and not ans == 'N'):
+        ans = input("Enter Y to Play again or N to stop")
+    while(ans == 'Y'):
+        a.draw()
+        a.dealer.firstTotal()
+        bet = input("Enter you Bet")
+        a.play(bet)
+        ans = input("Enter Y to Play again or N to stop")
+        while(not ans == 'Y' and not ans == 'N'):
+            ans = input("Enter Y to Play again or N to stop")
 # If win Bankroll = Bankroll + 2 x bet
 
 
